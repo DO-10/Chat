@@ -19,22 +19,51 @@ public class ChatRoomService {
     private UserService userService;
     private static final String JDBC_URL = "jdbc:mysql://localhost:3306/chat";
     private static final String JDBC_USER = "root";
-    private static final String JDBC_PASSWORD = "liu123";
+    private static final String JDBC_PASSWORD = "xy20041004";
     public void joinRoom(String userId, String roomId) throws SQLException {
         rooms.computeIfAbsent(roomId, k -> new CopyOnWriteArraySet<>()).add(userId);
         sql sql = new sql();
         sql.updateUserRoomAndActivate(userId, roomId);
         CopyOnWriteArraySet<String> userlist = rooms.get(roomId);
         System.out.println("用户列表:"+userlist);
-        Message userMessage = new Message();
-        userMessage.setSender("System");
-        userMessage.setType(MessageType.INFORMATION);
-        userMessage.setRoomId(roomId);
-        List<String> userIdList = new ArrayList<>(userlist);
-        userMessage.setReceiver(userId);
-        userMessage.setUsers(userIdList);
-        Channel channel = UserService.getOnlineUsers().get(userId);
-        channel.writeAndFlush(userMessage);
+//        Message userMessage = new Message();
+//        userMessage.setSender("System");
+//        userMessage.setType(MessageType.INFORMATION);
+//        userMessage.setRoomId(roomId);
+//        List<String> userIdList = new ArrayList<>(userlist);
+//        userMessage.setReceiver(userId);
+//        userMessage.setUsers(userIdList);
+//        Channel channel = UserService.getOnlineUsers().get(userId);
+//        channel.writeAndFlush(userMessage);
+        for (String username : rooms.get(roomId)) {
+
+            Message userMessage = new Message();
+            userMessage.setSender("System");
+            userMessage.setType(MessageType.INFORMATION);
+            userMessage.setRoomId(roomId);
+            List<String> userIdList = new ArrayList<>(userlist);
+            userMessage.setReceiver(username);
+            userMessage.setUsers(userIdList);
+            Channel channel = UserService.getOnlineUsers().get(username);
+            System.out.println("msg"+userMessage);
+            channel.writeAndFlush(userMessage);
+
+
+            System.out.println("[<UNK>] <UNK>ID: " + rooms + "<UNK>: ");
+            System.out.println("尝试向用户 " + userId + " 发送消息");
+//为web渲染设置接收者
+
+
+//            if (channel == null) {
+//                System.out.println("用户 " + userId + " 没有找到 Channel（可能不在线）");
+//            } else if (!channel.isActive()) {
+//                System.out.println("用户 " + userId + " 的 Channel 已断开");
+//            } else {
+//                System.out.println("向用户 " + userId + " 发送消息中...");
+//                channel.writeAndFlush(msgCopy);
+//                System.out.println("<UNK> " + msgCopy + " <UNK>");
+//            }
+        }
 
 
 //
@@ -140,9 +169,19 @@ public class ChatRoomService {
         }
 
         for (String userId : rooms.get(roomId)) {
+            Message msgCopy = new Message();
+            msgCopy.setType(message.getType());
+            msgCopy.setSender(message.getSender());
+            msgCopy.setRoomId(message.getRoomId());
+            msgCopy.setContent(message.getContent());
+            msgCopy.setTimestamp(message.getTimestamp());
+            msgCopy.setReceiver(userId); // 针对每个接收者设置独立字段
+
+            System.out.println(msgCopy);
+
             System.out.println("[<UNK>] <UNK>ID: " + rooms + "<UNK>: ");
             System.out.println("尝试向用户 " + userId + " 发送消息");
-            message.setReceiver(userId);//为web渲染设置接收者
+//为web渲染设置接收者
             Channel channel = UserService.getOnlineUsers().get(userId);
 
             if (channel == null) {
@@ -151,7 +190,8 @@ public class ChatRoomService {
                 System.out.println("用户 " + userId + " 的 Channel 已断开");
             } else {
                 System.out.println("向用户 " + userId + " 发送消息中...");
-                channel.writeAndFlush(message);
+                channel.writeAndFlush(msgCopy);
+                System.out.println("<UNK> " + msgCopy + " <UNK>");
             }
         }
     }
